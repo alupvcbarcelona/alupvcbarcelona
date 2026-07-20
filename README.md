@@ -146,3 +146,4 @@ npm start
 - The profile route is protected and requires an authorization token.
 - Add validation and error handling improvements for production readiness.
 - Consider adding tests and request validation middleware for stronger API reliability.
+
