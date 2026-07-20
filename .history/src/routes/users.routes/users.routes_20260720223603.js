@@ -38,7 +38,7 @@ USER_ROUTES.post('/login', LOGIN_USER)
  * @desc    UPDATE AUTHENTICATED USER PROFILE
  * @access  PRIVATE (AUTHENTICATED USER)
  */
-USER_ROUTES.get('/profile', isAuth, GET_PROFILE)
+USER_ROUTES.put('/profile', isAuth, GET_PROFILE)
 
 
 
