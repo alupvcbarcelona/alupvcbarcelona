@@ -14,6 +14,6 @@ const REVIEWS = require('./reviews.routes/reviews.routes')
 // ----------------------
 
 MAIN_ROUTES.use('/user', USER)
-MAIN_ROUTES.use('/reviews', REVIEWS)
+MAIN_ROUTES.use('/reviews', )
 
 module.exports = MAIN_ROUTES

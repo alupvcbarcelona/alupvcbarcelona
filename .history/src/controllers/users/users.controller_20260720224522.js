@@ -1,6 +1,7 @@
 const bcrypt = require("bcrypt");
 const USER_MODEL = require("../../models/user.model");
 const { CREATE_TOKEN } = require("../../config/jwt.config");
+const REVIEW_MODEL = require("../../models/review.model");
 
 const CREATE_USER = async (req, res, next) => {
   try {
@@ -49,7 +50,7 @@ const LOGIN_USER = async (req, res, next) => {
     });
   } catch (error) {
     console.error("ERROR IN LOGIN_USER:", error);
-    next(new Error("Error logging in. Please try again later."));
+    next(new Error("Error loging in. Please try again later."));
   }
 };
 
@@ -61,6 +62,34 @@ const GET_PROFILE = async (req, res, next) => {
     console.error("ERROR IN PROFILE_USER:", error);
     next(new Error("Error retrieving user profile. Please try again later."));
   }
+};
+
+const CREATE_REVIEW = async (req, res, next) => {
+  try {
+    const { name, title, description } = req.body;
+    if (!name || !title || !description) {
+      return res.status(400).json({ message: "All fields are required." });
+    }
+    const create_review = new USER_MODEL(req.body);
+    await create_review.save();
+    if (!create_review) {
+      return res.status(500).json({ message: "Failed to create review." });
+    }
+    return res.status(200).json({
+      message: "Create new review.",
+      review: create_review,
+    });
+  } catch (error) {
+    console.error("ERROR IN CREATE_REVIEW:", error);
+    next(new Error("Error creating user. Please try again later.".error));
+  }
+};
+
+const GET_REVIEW = async (req, res, next) => {
+  try {
+    const reviews = await REVIEW_MODEL.find();
+    return res.status(200).json(reviews);
+  } catch (error) {}
 };
 
 module.exports = {

@@ -66,5 +66,5 @@ const GET_PROFILE = async (req, res, next) => {
 module.exports = {
   CREATE_USER,
   LOGIN_USER,
-  GET_PROFILE,
+  GET_PROFILE
 };
