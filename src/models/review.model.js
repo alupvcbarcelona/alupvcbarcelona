@@ -18,6 +18,7 @@ const reviewSchema = new Schema(
       lowercase: true,
       required: true,
     },
+    stars: { type: Number, required: true, min: 1, max: 5 },
   },
   {
     collection: "reviews", // COLLECTION NAME IN MONGODB

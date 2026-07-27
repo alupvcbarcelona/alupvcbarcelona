@@ -19,7 +19,16 @@ const APP = EXPRESS()
 // ----------------------
 // MIDDLEWARES
 // ----------------------
-APP.use(CORS()) // ENABLE CORS
+APP.use(
+  CORS({
+    origin: [
+      "http://localhost:5173",
+      "http://192.168.100.135:5173",
+      "https://alupvcbarcelona.es"
+    ],
+    methods: ["GET", "POST", "PUT", "DELETE"],
+    credentials: true,
+  })) // ENABLE CORS
 APP.use(EXPRESS.json()) // PARSE JSON REQUESTS
 APP.use(EXPRESS.urlencoded({ extended: true })) // PARSE URL-ENCODED REQUESTS
 
