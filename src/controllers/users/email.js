@@ -89,7 +89,7 @@ const emailWelcome = async (user) => {
           
           <div class="signature">
             <p>Cordialmente,</p>
-            <p>CEO - Founder Packeo</p>
+            <p>CEO - Founder ALUPVC-BARCELONA</p>
             <p><a href="https://alupvcbarcelona.es">alupvcbarcelona.es</a></p>
           </div>
 
