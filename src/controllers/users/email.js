@@ -1,4 +1,5 @@
-const { sendMail } = require('../../../config/nodemailer')
+const { sendMail } = require("../../config/nodemailer")
+
 
 const emailWelcome = async (user) => {
   const htmlContent = `

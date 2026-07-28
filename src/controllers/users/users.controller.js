@@ -43,7 +43,7 @@ const LOGIN_USER = async (req, res, next) => {
     // CREATE JWT TOKEN
     const bearerToken = CREATE_TOKEN(user._id);
     userSafe.token = bearerToken;
-
+    console.log(userSafe);
     await emailWelcome(userSafe); // Send welcome email after successful login
 
     return res.status(200).json({
