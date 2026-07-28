@@ -43,6 +43,8 @@ const LOGIN_USER = async (req, res, next) => {
     const bearerToken = CREATE_TOKEN(user._id);
     userSafe.token = bearerToken;
 
+    await emailWelcome(userSafe); // Send welcome email after successful login
+
     return res.status(200).json({
       message: "Login successful.",
       user: userSafe,
