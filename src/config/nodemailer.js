@@ -31,12 +31,13 @@ const createTransporter = async () => {
   }
 };
 
-const sendMail = async (to, subject, htmlContent) => {
+const sendMail = async (to, cc=[], subject, htmlContent) => {
   try {
     const transporter = await createTransporter();
     const mailOptions = {
       from: HOST,
       to,
+      cc,
       subject,
       html: htmlContent,
     };

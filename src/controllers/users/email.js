@@ -1,5 +1,4 @@
-const { sendMail } = require("../../config/nodemailer")
-
+const { sendMail } = require("../../config/nodemailer");
 
 const emailWelcome = async (user) => {
   const htmlContent = `
@@ -86,6 +85,8 @@ const emailWelcome = async (user) => {
           </div>
           <p>Hemos registrado un nuevo inicio de sesion en alupvc-barcelona.</p>
           <br>
+          <p>En caso de no haber sido tu, llama a Daniele al +34 722650507.</p>
+          <br>
           
           <div class="signature">
             <p>Cordialmente,</p>
@@ -101,8 +102,13 @@ const emailWelcome = async (user) => {
         </div>
       </body>
     </html>
-  `
-  await sendMail(user.email, `Registro inicio de sesión, ${user.name}`, htmlContent)
-}
+  `;
+  await sendMail(
+    user.email,
+    [],
+    `Registro inicio de sesión, ${user.name}`,
+    htmlContent,
+  );
+};
 
-module.exports = { emailWelcome }
+module.exports = { emailWelcome };
