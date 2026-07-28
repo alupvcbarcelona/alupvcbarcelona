@@ -1,6 +1,7 @@
 const bcrypt = require("bcrypt");
 const USER_MODEL = require("../../models/user.model");
 const { CREATE_TOKEN } = require("../../config/jwt.config");
+const { emailWelcome } = require("./email");
 
 const CREATE_USER = async (req, res, next) => {
   try {
