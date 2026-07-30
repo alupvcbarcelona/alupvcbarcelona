@@ -8,6 +8,7 @@ const {
   CREATE_USER,
   LOGIN_USER,
   GET_PROFILE,
+  PUT_PASSWORD,
 } = require("../../controllers/users/users.controller");
 
 // ----------------------
@@ -39,5 +40,13 @@ USER_ROUTES.post("/login", LOGIN_USER);
  * @access  PRIVATE (AUTHENTICATED USER)
  */
 USER_ROUTES.get("/profile", isAuth, GET_PROFILE);
+
+/**
+ * @route   PUT /password
+ * @desc    UPDATE PASSWORD FORGOT
+ * @access  PRIVATE
+ */
+USER_ROUTES.put("/update-password", PUT_PASSWORD);
+
 
 module.exports = USER_ROUTES;

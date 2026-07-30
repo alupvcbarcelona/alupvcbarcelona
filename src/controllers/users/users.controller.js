@@ -1,7 +1,7 @@
 const bcrypt = require("bcrypt");
 const USER_MODEL = require("../../models/user.model");
 const { CREATE_TOKEN } = require("../../config/jwt.config");
-const { emailWelcome } = require("./email");
+const { emailWelcome, emailNewPassword } = require("./email");
 const UAParser = require("ua-parser-js");
 const geoip = require("geoip-lite");
 
@@ -21,6 +21,7 @@ const CREATE_USER = async (req, res, next) => {
     next(new Error("Error creating user. Please try again later.".error));
   }
 };
+
 const LOGIN_USER = async (req, res, next) => {
   try {
     const { email, password } = req.body;
@@ -95,8 +96,29 @@ const GET_PROFILE = async (req, res, next) => {
   }
 };
 
+const PUT_PASSWORD = async (req, res, next) => {
+  try {
+    const { email, password } = req.body; // Extract token and new password from request body
+    const user = await USER_MODEL.findOne({ email });
+
+    if (!user) {
+      return res
+        .status(400)
+        .json({ message: "Correo incorrecto o no existe.." });
+    }
+
+    user.password = password;
+    await user.save();
+    await emailNewPassword(user);
+    res.json({ message: "Password updated successfully.", user });
+  } catch (error) {
+    next(error);
+  }
+};
+
 module.exports = {
   CREATE_USER,
   LOGIN_USER,
   GET_PROFILE,
+  PUT_PASSWORD,
 };
