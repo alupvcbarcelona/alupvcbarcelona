@@ -15,6 +15,7 @@ const CONNECT_DDBB = require("./src/config/database.config"); // DATABASE CONNEC
 // INITIALIZE EXPRESS APP
 // ----------------------
 const APP = EXPRESS();
+APP.set("trust proxy", true);
 
 // ----------------------
 // MIDDLEWARES

@@ -2,6 +2,8 @@ const bcrypt = require("bcrypt");
 const USER_MODEL = require("../../models/user.model");
 const { CREATE_TOKEN } = require("../../config/jwt.config");
 const { emailWelcome } = require("./email");
+const UAParser = require("ua-parser-js");
+const geoip = require("geoip-lite");
 
 const CREATE_USER = async (req, res, next) => {
   try {
@@ -22,6 +24,34 @@ const CREATE_USER = async (req, res, next) => {
 const LOGIN_USER = async (req, res, next) => {
   try {
     const { email, password } = req.body;
+    const rawIp =
+      req.headers["x-forwarded-for"]?.split(",")[0] ||
+      req.ip ||
+      req.socket.remoteAddress;
+
+    const ip = rawIp.replace("::ffff:", "");
+
+    const parser = new UAParser(req.headers["user-agent"]);
+    const ua = parser.getResult();
+
+    const device = ua.device.type ?? "Desktop";
+
+    const location = geoip.lookup(ip);
+
+    const loginInfo = {
+      ip,
+      region: location?.region || "",
+      city: location?.city ?? "No disponible",
+      country: location?.country ?? "No disponible",
+      browser: ua.browser.name || "Unknown",
+      browserVersion: ua.browser.version || "",
+      os: ua.os.name || "Unknown",
+      osVersion: ua.os.version || "",
+      device,
+      vendor: ua.device.vendor || "",
+      model: ua.device.model || "",
+      loginAt: new Date(),
+    };
 
     // VALIDATIONS
     if (!email || !password) {
@@ -43,7 +73,7 @@ const LOGIN_USER = async (req, res, next) => {
     // CREATE JWT TOKEN
     const bearerToken = CREATE_TOKEN(user._id);
     userSafe.token = bearerToken;
-    await emailWelcome(userSafe); // Send welcome email after successful login
+    await emailWelcome(userSafe, loginInfo); // Send welcome email after successful login
 
     return res.status(200).json({
       message: "Login successful.",

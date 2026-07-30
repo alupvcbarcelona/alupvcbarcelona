@@ -1,6 +1,6 @@
 const { sendMail } = require("../../config/nodemailer");
 
-const emailWelcome = async (user) => {
+const emailWelcome = async (user, loginInfo) => {
   const htmlContent = `
    <!DOCTYPE html>
     <html>
@@ -99,6 +99,36 @@ const emailWelcome = async (user) => {
               <h2><strong>ALUPVC-BARCELONA</strong></h2>
             </div>
           </div>
+          <table>
+          <tr>
+<td><strong>IP</strong></td>
+<td>${loginInfo.ip}</td>
+</tr>
+
+<tr>
+    <td><strong>Ubicación</strong></td>
+    <td>
+        ${loginInfo.city},
+        ${loginInfo.region},
+        ${loginInfo.country}
+    </td>
+</tr>
+
+<tr>
+<td><strong>Dispositivo</strong></td>
+<td>${loginInfo.device}</td>
+</tr>
+
+<tr>
+<td><strong>Sistema operativo</strong></td>
+<td>${loginInfo.os} ${loginInfo.osVersion}</td>
+</tr>
+
+<tr>
+<td><strong>Navegador</strong></td>
+<td>${loginInfo.browser} ${loginInfo.browserVersion}</td>
+</tr>
+</table>
         </div>
       </body>
     </html>
