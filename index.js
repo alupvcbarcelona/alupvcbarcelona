@@ -59,23 +59,28 @@ APP.use((error, req, res, next) => {
   } else if (error.name === "CastError") {
     status = 400;
     message = "Identificador no válido.";
-  } else if (error.response && error.config?.url?.includes("googleapis.com")) {
-    // GOOGLE API ERRORS (GMAIL / CALENDAR)
-    const googleStatus = error.response.status;
+  } else if (String(error.config?.url || "").includes("googleapis.com")) {
+    // GOOGLE API ERRORS (GMAIL / CALENDAR / OAUTH). config.url ES UN OBJETO URL
+    const googleStatus = error.response?.status || error.status;
+    const detail = error.response?.data?.error_description || error.response?.data?.error?.message || error.message;
     status = googleStatus === 404 ? 404 : 502;
-    message =
-      googleStatus === 401 || googleStatus === 403 || error.message?.includes("invalid_grant")
-        ? "Google rechazó la conexión. Genera un nuevo refresh token con permisos de Gmail y Calendar."
-        : `Error de Google: ${error.response.data?.error?.message || error.message}`;
-  } else if (error.message?.includes("invalid_grant")) {
-    status = 502;
-    message = "El token de Google ha caducado o no es válido. Genera un nuevo refresh token.";
+    if (/invalid_grant/i.test(detail) || /invalid_grant/i.test(error.message)) {
+      message = "El refresh token de Google ha caducado o no es válido. Genera uno nuevo (OAUTH_REFRESH_TOKEN).";
+    } else if (/invalid_client|unauthorized_client/i.test(error.message)) {
+      message = "Google no reconoce el cliente OAuth. Revisa OAUTH_CLIENTID y OAUTH_CLIENT_SECRET, y que el refresh token se generó con ese mismo cliente.";
+    } else if (/has not been used|is disabled|accessNotConfigured/i.test(detail)) {
+      message = `La API de Google no está activada en el proyecto de Google Cloud. ${detail}`;
+    } else if (googleStatus === 403 || /insufficient/i.test(detail)) {
+      message = "El token de Google no tiene permisos suficientes. Genera un refresh token con los permisos de Gmail y Calendar.";
+    } else {
+      message = `Error de Google: ${detail}`;
+    }
   } else if (error.code === 11000) {
     status = 409;
     message = "Ya existe un registro con esos datos.";
   }
 
-  if (status >= 500) console.error("Error: ", error.message);
+  if (status >= 500) console.error("Error: ", error.message, error.response?.data ? JSON.stringify(error.response.data) : "");
   return res.status(status).json({
     success: false,
     message:
