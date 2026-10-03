@@ -12,6 +12,7 @@ const POSTS = require("./posts.routes");
 const MEDIA = require("./media.routes");
 const VISITS = require("./visits.routes");
 const SETTINGS = require("./settings.routes");
+const SERVICES = require("./services.routes");
 const { MAIL_ROUTES, CALENDAR_ROUTES } = require("./google.routes");
 
 // ----------------------
@@ -27,6 +28,7 @@ MAIN_ROUTES.use("/posts", POSTS);
 MAIN_ROUTES.use("/media", MEDIA);
 MAIN_ROUTES.use("/visits", VISITS);
 MAIN_ROUTES.use("/settings", SETTINGS);
+MAIN_ROUTES.use("/services", SERVICES);
 MAIN_ROUTES.use("/mail", MAIL_ROUTES);
 MAIN_ROUTES.use("/calendar", CALENDAR_ROUTES);
 
