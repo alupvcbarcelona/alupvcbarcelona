@@ -9,6 +9,7 @@ const {
   DELETE_DOCUMENT,
   SEND_DOCUMENT,
   CONVERT_TO_INVOICE,
+  CANCEL_DOCUMENT,
 } = require("../controllers/documents/documents.controller");
 const { isAuth } = require("../middlewares/is-auth.middleware");
 
@@ -22,6 +23,7 @@ DOCUMENT_ROUTES.put("/:id", UPDATE_DOCUMENT);
 DOCUMENT_ROUTES.delete("/:id", DELETE_DOCUMENT);
 DOCUMENT_ROUTES.post("/:id/send", SEND_DOCUMENT);
 DOCUMENT_ROUTES.post("/:id/invoice", CONVERT_TO_INVOICE);
+DOCUMENT_ROUTES.post("/:id/cancel", CANCEL_DOCUMENT);
 
 // ----------------------
 // LEGACY ROUTES (OLD FRONTEND /api/quote/*)

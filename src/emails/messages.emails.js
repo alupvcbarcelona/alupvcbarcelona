@@ -37,7 +37,7 @@ const emailMessageReceived = async (message, company) => {
   const body = `
     ${H1("Hemos recibido tu solicitud")}
     ${P(`Hola ${ESCAPE_HTML(message.name)}, gracias por contactar con ${ESCAPE_HTML(company.name)}.`)}
-    ${P("Revisaremos tu mensaje y te responderemos lo antes posible, normalmente en menos de 24 horas laborables.")}
+    ${P("Revisaremos tu mensaje y te responderemos lo antes posible.")}
     ${NOTE(ESCAPE_MULTILINE(message.message))}
     ${P(`Si es urgente, puedes llamarnos al <strong>${ESCAPE_HTML(company.phone)}</strong>.`)}
   `;

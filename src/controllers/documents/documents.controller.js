@@ -140,10 +140,12 @@ const UPDATE_DOCUMENT = async (req, res) => {
   const document = await DOCUMENT_MODEL.findById(req.params.id);
   if (!document) return NOT_FOUND(res);
 
-  if (document.type === "factura" && ["pagado", "anulado"].includes(document.status) && req.body.items) {
+  // UNA FACTURA ANULADA NO SE MODIFICA (SOLO PUEDE REACTIVARSE CAMBIANDO SU ESTADO)
+  const onlyStatus = Object.keys(req.body).every((key) => key === "status");
+  if (document.type === "factura" && document.status === "anulado" && !onlyStatus) {
     return res.status(400).json({
       success: false,
-      message: "No se puede modificar el contenido de una factura pagada o anulada.",
+      message: "La factura está anulada. Reactívala cambiando su estado para poder modificarla.",
     });
   }
 
@@ -179,6 +181,28 @@ const DELETE_DOCUMENT = async (req, res) => {
 
   await document.deleteOne();
   return res.status(200).json({ success: true, message: "Documento eliminado." });
+};
+
+//======================================================
+// CANCEL (FACTURA -> ANULADA, PRESUPUESTO -> RECHAZADO). KEEPS THE NUMBER
+//======================================================
+const CANCEL_DOCUMENT = async (req, res) => {
+  const document = await DOCUMENT_MODEL.findById(req.params.id);
+  if (!document) return NOT_FOUND(res);
+
+  document.status = document.type === "factura" ? "anulado" : "rechazado";
+  const reason = String(req.body.reason || "").trim();
+  if (reason) {
+    const stamp = new Date().toLocaleDateString("es-ES");
+    document.observations = `${document.observations ? `${document.observations}\n` : ""}${document.type === "factura" ? "Anulada" : "Cancelado"} el ${stamp}: ${reason}`;
+  }
+  await document.save();
+
+  return res.status(200).json({
+    success: true,
+    message: document.type === "factura" ? `Factura ${document.number} anulada.` : `Presupuesto ${document.number} cancelado.`,
+    data: document,
+  });
 };
 
 //======================================================
@@ -263,4 +287,5 @@ module.exports = {
   DELETE_DOCUMENT,
   SEND_DOCUMENT,
   CONVERT_TO_INVOICE,
+  CANCEL_DOCUMENT,
 };
