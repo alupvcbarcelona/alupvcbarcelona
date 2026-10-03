@@ -4,6 +4,7 @@ RESOLVE_DNS(); // Function to resolve DNS issues in certain environments
 require("dotenv").config();
 const EXPRESS = require("express");
 const CORS = require("cors");
+const HELMET = require("helmet");
 
 // ----------------------
 // CONFIGS
@@ -20,8 +21,10 @@ APP.set("trust proxy", true);
 // ----------------------
 // MIDDLEWARES
 // ----------------------
-APP.use(CORS());
-APP.use(EXPRESS.json()); // PARSE JSON REQUESTS
+const ORIGINS = ENV.CORS_ORIGIN.split(",").map((o) => o.trim()).filter(Boolean);
+APP.use(HELMET({ crossOriginResourcePolicy: { policy: "cross-origin" } }));
+APP.use(CORS(ORIGINS.length ? { origin: ORIGINS } : undefined));
+APP.use(EXPRESS.json({ limit: "1mb" })); // PARSE JSON REQUESTS
 APP.use(EXPRESS.urlencoded({ extended: true })); // PARSE URL-ENCODED REQUESTS
 
 // ----------------------
@@ -40,24 +43,55 @@ APP.use("/api", ROUTES); // PREFIX ALL ROUTES WITH /API */
 // ----------------------
 APP.use((req, res, next) => {
   // HANDLE 404 ERRORS
-  const error = new Error("Route does not exist. Please contact support.");
+  const error = new Error("La ruta no existe.");
   error.status = 404;
   next(error);
 });
 
 APP.use((error, req, res, next) => {
   // HANDLE GENERAL ERRORS
-  console.error("Error: ", error.message);
-  return res.status(error.status || 500).json({
+  let status = error.status || 500;
+  let message = error.message;
+
+  if (error.name === "ValidationError") {
+    status = 400;
+    message = Object.values(error.errors).map((e) => e.message).join(" ");
+  } else if (error.name === "CastError") {
+    status = 400;
+    message = "Identificador no válido.";
+  } else if (error.response && error.config?.url?.includes("googleapis.com")) {
+    // GOOGLE API ERRORS (GMAIL / CALENDAR)
+    const googleStatus = error.response.status;
+    status = googleStatus === 404 ? 404 : 502;
+    message =
+      googleStatus === 401 || googleStatus === 403 || error.message?.includes("invalid_grant")
+        ? "Google rechazó la conexión. Genera un nuevo refresh token con permisos de Gmail y Calendar."
+        : `Error de Google: ${error.response.data?.error?.message || error.message}`;
+  } else if (error.message?.includes("invalid_grant")) {
+    status = 502;
+    message = "El token de Google ha caducado o no es válido. Genera un nuevo refresh token.";
+  } else if (error.code === 11000) {
+    status = 409;
+    message = "Ya existe un registro con esos datos.";
+  }
+
+  if (status >= 500) console.error("Error: ", error.message);
+  return res.status(status).json({
+    success: false,
     message:
-      error.message ||
-      "There was a problem with the server. Please try again later.",
+      status === 500
+        ? "Ha ocurrido un problema en el servidor. Inténtalo de nuevo más tarde."
+        : message,
   });
 });
 
 // ----------------------
 // START SERVER
 // ----------------------
-APP.listen(ENV.PORT, () => {
-  console.log(`Server running on port ${ENV.PORT}`);
-});
+if (require.main === module) {
+  APP.listen(ENV.PORT, () => {
+    console.log(`Server running on port ${ENV.PORT}`);
+  });
+}
+
+module.exports = APP;

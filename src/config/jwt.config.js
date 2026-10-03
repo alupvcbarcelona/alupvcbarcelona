@@ -5,7 +5,7 @@ const CREATE_TOKEN = (id) => {
   if (!id) {
     throw new Error('ID inválido')
   }
-  return JWT.sign({ id }, JWT_SECRET, { expiresIn: '365d' })
+  return JWT.sign({ id }, JWT_SECRET, { expiresIn: '30d' })
 }
 
 const VERIFY_TOKEN = (token) => {

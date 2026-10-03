@@ -1,11 +1,11 @@
 {
   "name": "backend",
   "version": "1.0.0",
-  "description": "",
+  "description": "API de AluPVC Barcelona: web pública, panel de administración, presupuestos y facturas",
   "main": "index.js",
   "scripts": {
-    "dev": "nodemon src/index.js",
-    "start": "node src/index.js"
+    "dev": "nodemon index.js",
+    "start": "node index.js"
   },
   "keywords": [],
   "author": "",
@@ -13,11 +13,11 @@
   "dependencies": {
     "bcrypt": "^6.0.0",
     "cors": "^2.8.6",
-    "dns": "^0.2.2",
     "dotenv": "^17.4.2",
     "express": "^5.2.1",
     "geoip-lite": "^2.0.3",
     "googleapis": "^173.0.0",
+    "helmet": "^8.3.0",
     "jsonwebtoken": "^9.0.3",
     "mongoose": "^9.8.0",
     "nodemailer": "^9.0.3",
@@ -25,5 +25,8 @@
   },
   "devDependencies": {
     "nodemon": "^3.1.14"
+  },
+  "engines": {
+    "node": ">=20"
   }
 }

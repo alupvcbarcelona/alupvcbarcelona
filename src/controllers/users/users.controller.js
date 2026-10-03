@@ -1,124 +1,124 @@
 const bcrypt = require("bcrypt");
 const USER_MODEL = require("../../models/user.model");
 const { CREATE_TOKEN } = require("../../config/jwt.config");
-const { emailWelcome, emailNewPassword } = require("./email");
-const UAParser = require("ua-parser-js");
-const geoip = require("geoip-lite");
+const { ALLOW_BOOTSTRAP_ADMIN } = require("../../config/env.config");
+const { emailWelcome, emailNewPassword } = require("../../emails/users.emails");
+const { GET_REQUEST_INFO } = require("../../utils/request-info");
 
-const CREATE_USER = async (req, res, next) => {
-  try {
-    const create_user = new USER_MODEL(req.body);
-    await create_user.save();
-    if (!create_user) {
-      return res.status(500).json({ message: "Failed to create user." });
-    }
-    return res.status(200).json({
-      message: "Create new user.",
-      user: create_user,
+const SAFE_USER = (user) => {
+  const safe = user.toObject ? user.toObject() : { ...user };
+  delete safe.password;
+  return safe;
+};
+
+// ----------------------
+// CREATE USER
+// ONLY AN AUTHENTICATED ADMIN, OR THE VERY FIRST USER WHEN ALLOW_BOOTSTRAP_ADMIN=true
+// ----------------------
+const CREATE_USER = async (req, res) => {
+  const total = await USER_MODEL.estimatedDocumentCount();
+  const isBootstrap = total === 0 && ALLOW_BOOTSTRAP_ADMIN;
+
+  if (!req.user && !isBootstrap) {
+    return res.status(403).json({ message: "El registro de usuarios está deshabilitado." });
+  }
+
+  const { name, lastname, email, password } = req.body;
+  if (!name || !lastname || !email || !password || password.length < 8) {
+    return res.status(400).json({
+      message: "Nombre, apellidos, email y contraseña (mínimo 8 caracteres) son obligatorios.",
     });
-  } catch (error) {
-    console.error("ERROR IN CREATE_USER:", error);
-    next(new Error("Error creating user. Please try again later.".error));
   }
+
+  const user = await USER_MODEL.create({
+    name,
+    lastname,
+    email,
+    password,
+    roles: ["admin"],
+  });
+
+  return res.status(201).json({ message: "Usuario creado.", user: SAFE_USER(user) });
 };
 
-const LOGIN_USER = async (req, res, next) => {
-  try {
-    const { email, password } = req.body;
-    const rawIp =
-      req.headers["x-forwarded-for"]?.split(",")[0] ||
-      req.ip ||
-      req.socket.remoteAddress;
+// ----------------------
+// LOGIN
+// ----------------------
+const LOGIN_USER = async (req, res) => {
+  const { email, password } = req.body;
+  if (!email || !password) {
+    return res.status(400).json({ message: "Email y contraseña son obligatorios." });
+  }
 
-    const ip = rawIp.replace("::ffff:", "");
+  const user = await USER_MODEL.findOne({ email: String(email).toLowerCase().trim() });
+  const isMatch = user ? await bcrypt.compare(password, user.password) : false;
+  if (!isMatch) {
+    return res.status(401).json({ message: "Email o contraseña incorrectos." });
+  }
 
-    const parser = new UAParser(req.headers["user-agent"]);
-    const ua = parser.getResult();
+  const info = GET_REQUEST_INFO(req);
+  const loginInfo = { ...info, loginAt: new Date() };
 
-    const device = ua.device.type ?? "Desktop";
+  user.lastLoginAt = loginInfo.loginAt;
+  user.lastLoginIp = info.ip;
+  await user.save();
 
-    const location = geoip.lookup(ip);
+  const userSafe = SAFE_USER(user);
+  userSafe.token = CREATE_TOKEN(user._id);
 
-    const loginInfo = {
-      ip,
-      region: location?.region || "",
-      city: location?.city ?? "No disponible",
-      country: location?.country ?? "No disponible",
-      browser: ua.browser.name || "Unknown",
-      browserVersion: ua.browser.version || "",
-      os: ua.os.name || "Unknown",
-      osVersion: ua.os.version || "",
-      device,
-      vendor: ua.device.vendor || "",
-      model: ua.device.model || "",
-      loginAt: new Date(),
-    };
+  await emailWelcome(userSafe, loginInfo); // LOGIN ALERT
 
-    // VALIDATIONS
-    if (!email || !password) {
-      return res
-        .status(400)
-        .json({ message: "Email and password are required." });
-    }
-    const user = await USER_MODEL.findOne({ email });
-    if (!user) {
-      return res.status(401).json({ message: "Invalid email or password." });
-    }
-    const isMatch = await bcrypt.compare(password, user.password);
-    if (!isMatch) {
-      return res.status(401).json({ message: "Invalid email or password." });
-    }
-    const userSafe = user.toObject();
-    delete userSafe.password;
+  return res.status(200).json({ message: "Login correcto.", user: userSafe });
+};
 
-    // CREATE JWT TOKEN
-    const bearerToken = CREATE_TOKEN(user._id);
-    userSafe.token = bearerToken;
-    await emailWelcome(userSafe, loginInfo); // Send welcome email after successful login
+// ----------------------
+// PROFILE
+// ----------------------
+const GET_PROFILE = async (req, res) => {
+  return res.status(200).json({ user: req.user });
+};
 
-    return res.status(200).json({
-      message: "Login successful.",
-      user: userSafe,
+// ----------------------
+// UPDATE PROFILE (NAME / LASTNAME / EMAIL)
+// ----------------------
+const PUT_PROFILE = async (req, res) => {
+  const { name, lastname, email } = req.body;
+  const user = await USER_MODEL.findById(req.user._id);
+  if (name) user.name = name;
+  if (lastname) user.lastname = lastname;
+  if (email) user.email = email;
+  await user.save();
+  return res.status(200).json({ message: "Perfil actualizado.", user: SAFE_USER(user) });
+};
+
+// ----------------------
+// CHANGE PASSWORD (AUTHENTICATED, REQUIRES CURRENT PASSWORD)
+// ----------------------
+const PUT_PASSWORD = async (req, res) => {
+  const { currentPassword, password } = req.body;
+  if (!currentPassword || !password || password.length < 8) {
+    return res.status(400).json({
+      message: "Indica la contraseña actual y una nueva de al menos 8 caracteres.",
     });
-  } catch (error) {
-    console.error("ERROR IN LOGIN_USER:", error);
-    next(new Error("Error logging in. Please try again later."));
   }
-};
 
-const GET_PROFILE = async (req, res, next) => {
-  try {
-    const { user } = req;
-    return res.status(200).json({ user });
-  } catch (error) {
-    console.error("ERROR IN PROFILE_USER:", error);
-    next(new Error("Error retrieving user profile. Please try again later."));
+  const user = await USER_MODEL.findById(req.user._id);
+  const isMatch = await bcrypt.compare(currentPassword, user.password);
+  if (!isMatch) {
+    return res.status(401).json({ message: "La contraseña actual no es correcta." });
   }
-};
 
-const PUT_PASSWORD = async (req, res, next) => {
-  try {
-    const { email, password } = req.body; // Extract token and new password from request body
-    const user = await USER_MODEL.findOne({ email });
+  user.password = password;
+  await user.save();
+  await emailNewPassword(user);
 
-    if (!user) {
-      return res
-        .status(400)
-        .json({ message: "Correo incorrecto o no existe.." });
-    }
-
-    user.password = password;
-    await user.save();
-    await emailNewPassword(user);
-    res.json({ message: "Password updated successfully.", user });
-  } catch (error) {
-    next(error);
-  }
+  return res.status(200).json({ message: "Contraseña actualizada correctamente." });
 };
 
 module.exports = {
   CREATE_USER,
   LOGIN_USER,
   GET_PROFILE,
+  PUT_PROFILE,
   PUT_PASSWORD,
 };

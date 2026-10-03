@@ -31,6 +31,8 @@ const userSchema = new Schema(
       enum: ['user', 'admin'],
       default: ['user'],
     }, // USER ROLES
+    lastLoginAt: Date,
+    lastLoginIp: String,
   },
   {
     collection: 'users', // COLLECTION NAME IN MONGODB
@@ -46,8 +48,7 @@ userSchema.pre('save', async function () {
   if (this.isModified('password') || this.isNew) {
     // Solo hasheamos si NO empieza por el prefijo típico de bcrypt ($2b$)
     if (!this.password.startsWith('$2b$')) {
-      const bcrypt = require('bcrypt')
-      this.password = await bcrypt.hash(this.password, 8)
+      this.password = await bcrypt.hash(this.password, 10)
     }
   }
 })

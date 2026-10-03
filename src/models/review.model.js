@@ -2,32 +2,23 @@ const mongoose = require("mongoose");
 const { Schema } = mongoose;
 
 // ----------------------
-// USER SCHEMA
+// REVIEW SCHEMA
 // ----------------------
 const reviewSchema = new Schema(
   {
-    // PERSONAL INFORMATION
-    username: { type: String, required: true }, // FIRST NAME
-    title: {
-      type: String,
-      lowercase: true,
-      required: true,
-    },
-    description: {
-      type: String,
-      lowercase: true,
-      required: true,
-    },
+    username: { type: String, required: true, trim: true, maxlength: 80 },
+    title: { type: String, required: true, trim: true, maxlength: 120 },
+    description: { type: String, required: true, trim: true, maxlength: 2000 },
     stars: { type: Number, required: true, min: 1, max: 5 },
+    location: { type: String, trim: true, maxlength: 80 },
+    // NEW REVIEWS WAIT FOR ADMIN APPROVAL. LEGACY REVIEWS (WITHOUT FIELD) ARE PUBLIC
+    approved: { type: Boolean, default: false },
   },
   {
-    collection: "reviews", // COLLECTION NAME IN MONGODB
-    timestamps: true, // CREATION AND UPDATE TIMESTAMPS
+    collection: "reviews",
+    timestamps: true,
   },
 );
 
-// ----------------------
-// MODEL EXPORT
-// ----------------------
 const REVIEW_MODEL = mongoose.model("reviews", reviewSchema);
 module.exports = REVIEW_MODEL;
