@@ -114,13 +114,15 @@ const emailDocument = async (doc, message) => {
     console.error(`Error generating PDF ${doc.number}: ${error.message}`);
   }
 
-  return sendMail(
+  const sent = await sendMail(
     doc.client.email,
     company.email ? [company.email] : [],
     `${label} ${doc.number} · ${company.name}`,
     LAYOUT({ title: `${label} ${doc.number}`, preheader: `${label} ${doc.number} por ${PRICE(doc.grandTotal)}`, body, company }),
     { replyTo: company.email, fromName: company.name, attachments },
   );
+  // pdfAttached: PARA AVISAR EN EL PANEL SI EL EMAIL SALIÓ SIN EL PDF
+  return sent ? { ...sent, pdfAttached: Boolean(attachments) } : false;
 };
 
 module.exports = { emailDocument };

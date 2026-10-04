@@ -242,7 +242,12 @@ const SEND_DOCUMENT = async (req, res) => {
   if (["borrador", "pendiente"].includes(document.status)) document.status = "enviado";
   await document.save();
 
-  return res.status(200).json({ success: true, message: `Enviado a ${email}.`, data: document });
+  return res.status(200).json({
+    success: true,
+    message: sent.pdfAttached ? `Enviado a ${email} con el PDF adjunto.` : `Enviado a ${email}, pero sin el PDF adjunto (no se pudo generar).`,
+    pdfAttached: sent.pdfAttached,
+    data: document,
+  });
 };
 
 //======================================================

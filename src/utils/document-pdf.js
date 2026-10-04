@@ -1,4 +1,5 @@
 const PDFDocument = require("pdfkit");
+const FONTS = require("../assets/fonts/inter");
 
 // ----------------------
 // PDF DE PRESUPUESTOS Y FACTURAS (A4)
@@ -42,17 +43,21 @@ const DRAW_LOGO = (pdf, x, y, size) => {
 };
 
 const LABEL_TEXT = (pdf, text, x, y, opts = {}) =>
-  pdf.font("Helvetica-Bold").fontSize(7.5).fillColor(C.muted).text(text.toUpperCase(), x, y, { characterSpacing: 0.8, ...opts });
+  pdf.font("Inter-Bold").fontSize(7.5).fillColor(C.muted).text(text.toUpperCase(), x, y, { characterSpacing: 0.8, ...opts });
 
 // ----------------------
 // BUILD: DEVUELVE UN BUFFER CON EL PDF
 // ----------------------
 const BUILD_DOCUMENT_PDF = (doc) =>
   new Promise((resolve, reject) => {
-    const pdf = new PDFDocument({ size: "A4", margin: MARGIN, bufferPages: true, info: {
+    // font: SE EVITAN LAS FUENTES ESTÁNDAR DE PDFKIT (NO LLEGAN AL EMPAQUETADO DE VERCEL)
+    const pdf = new PDFDocument({ size: "A4", margin: MARGIN, bufferPages: true, font: FONTS.REGULAR, info: {
       Title: `${LABEL[doc.type]} ${doc.number}`,
       Author: doc.company?.name || "AluPVC Barcelona",
     } });
+    pdf.registerFont("Inter", FONTS.REGULAR);
+    pdf.registerFont("Inter-Bold", FONTS.BOLD);
+    pdf.font("Inter");
     const chunks = [];
     pdf.on("data", (c) => chunks.push(c));
     pdf.on("end", () => resolve(Buffer.concat(chunks)));
@@ -65,8 +70,8 @@ const BUILD_DOCUMENT_PDF = (doc) =>
 
     // ---------- CABECERA
     DRAW_LOGO(pdf, MARGIN, MARGIN - 4, 40);
-    pdf.font("Helvetica-Bold").fontSize(17).fillColor(C.ink).text("AluPVC", MARGIN + 50, MARGIN, { lineBreak: false });
-    pdf.font("Helvetica-Bold").fontSize(7.5).fillColor(C.accent).text("BARCELONA", MARGIN + 50, MARGIN + 21, { characterSpacing: 2.2, lineBreak: false });
+    pdf.font("Inter-Bold").fontSize(17).fillColor(C.ink).text("AluPVC", MARGIN + 50, MARGIN, { lineBreak: false });
+    pdf.font("Inter-Bold").fontSize(7.5).fillColor(C.accent).text("BARCELONA", MARGIN + 50, MARGIN + 21, { characterSpacing: 2.2, lineBreak: false });
 
     const companyLines = [
       company.owner,
@@ -74,8 +79,8 @@ const BUILD_DOCUMENT_PDF = (doc) =>
       [company.address, [company.postalCode, company.city].filter(Boolean).join(" ")].filter(Boolean).join(", "),
       [company.phone, company.email].filter(Boolean).join(" · "),
     ].filter(Boolean);
-    pdf.font("Helvetica-Bold").fontSize(10).fillColor(C.ink).text(company.name || "", MARGIN, MARGIN - 2, { width: CONTENT_W, align: "right" });
-    pdf.font("Helvetica").fontSize(8.5).fillColor(C.text);
+    pdf.font("Inter-Bold").fontSize(10).fillColor(C.ink).text(company.name || "", MARGIN, MARGIN - 2, { width: CONTENT_W, align: "right" });
+    pdf.font("Inter").fontSize(8.5).fillColor(C.text);
     companyLines.forEach((line) => pdf.text(line, MARGIN + CONTENT_W / 2, pdf.y + 1, { width: CONTENT_W / 2, align: "right" }));
 
     let y = Math.max(pdf.y, MARGIN + 44) + 14;
@@ -83,7 +88,7 @@ const BUILD_DOCUMENT_PDF = (doc) =>
 
     // ---------- TÍTULO + DATOS
     y += 22;
-    pdf.font("Helvetica-Bold").fontSize(24).fillColor(C.ink).text(LABEL[doc.type], MARGIN, y);
+    pdf.font("Inter-Bold").fontSize(24).fillColor(C.ink).text(LABEL[doc.type], MARGIN, y);
     const meta = [
       ["Número", doc.number],
       ["Fecha", date(doc.issueDate)],
@@ -92,16 +97,16 @@ const BUILD_DOCUMENT_PDF = (doc) =>
     ].filter(Boolean);
     meta.forEach(([label, value], i) => {
       const my = y + 2 + i * 13;
-      pdf.font("Helvetica").fontSize(9).fillColor(C.muted).text(label, MARGIN + CONTENT_W - 190, my, { width: 90, align: "right" });
-      pdf.font(i === 0 ? "Helvetica-Bold" : "Helvetica").fillColor(C.ink).text(value, MARGIN + CONTENT_W - 95, my, { width: 95, align: "right" });
+      pdf.font("Inter").fontSize(9).fillColor(C.muted).text(label, MARGIN + CONTENT_W - 190, my, { width: 90, align: "right" });
+      pdf.font(i === 0 ? "Inter-Bold" : "Inter").fillColor(C.ink).text(value, MARGIN + CONTENT_W - 95, my, { width: 95, align: "right" });
     });
     y = Math.max(pdf.y, y + 2 + meta.length * 13) + 18;
 
     // ---------- CLIENTE / TRABAJO
     const colW = CONTENT_W / 2 - 12;
     LABEL_TEXT(pdf, "Cliente", MARGIN, y);
-    pdf.font("Helvetica-Bold").fontSize(10).fillColor(C.ink).text(client.name || "", MARGIN, y + 12, { width: colW });
-    pdf.font("Helvetica").fontSize(9).fillColor(C.text);
+    pdf.font("Inter-Bold").fontSize(10).fillColor(C.ink).text(client.name || "", MARGIN, y + 12, { width: colW });
+    pdf.font("Inter").fontSize(9).fillColor(C.text);
     [
       client.nif ? `NIF ${client.nif}` : "",
       client.address,
@@ -114,8 +119,8 @@ const BUILD_DOCUMENT_PDF = (doc) =>
     if (doc.title || doc.workAddress) {
       const rx = MARGIN + CONTENT_W / 2 + 12;
       LABEL_TEXT(pdf, "Trabajo", rx, y);
-      if (doc.title) pdf.font("Helvetica-Bold").fontSize(10).fillColor(C.ink).text(doc.title, rx, y + 12, { width: colW });
-      if (doc.workAddress) pdf.font("Helvetica").fontSize(9).fillColor(C.text).text(`Obra: ${doc.workAddress}`, rx, pdf.y + 1, { width: colW });
+      if (doc.title) pdf.font("Inter-Bold").fontSize(10).fillColor(C.ink).text(doc.title, rx, y + 12, { width: colW });
+      if (doc.workAddress) pdf.font("Inter").fontSize(9).fillColor(C.text).text(`Obra: ${doc.workAddress}`, rx, pdf.y + 1, { width: colW });
       rightEnd = pdf.y;
     }
     y = Math.max(leftEnd, rightEnd) + 22;
@@ -151,7 +156,7 @@ const BUILD_DOCUMENT_PDF = (doc) =>
         iva: `${item.iva}%`,
         amount: money(item.subtotal ?? item.quantity * item.unitPrice),
       };
-      pdf.font("Helvetica").fontSize(9);
+      pdf.font("Inter").fontSize(9);
       const h = Math.max(...cols.map((c) => pdf.heightOfString(cells[c.key], { width: c.w - 6 }))) + 12;
       if (y + h > BOTTOM) {
         pdf.addPage();
@@ -160,7 +165,7 @@ const BUILD_DOCUMENT_PDF = (doc) =>
       }
       let x = MARGIN;
       cols.forEach((c) => {
-        pdf.font("Helvetica").fontSize(9).fillColor(c.key === "amount" || c.key === "description" ? C.ink : C.text)
+        pdf.font("Inter").fontSize(9).fillColor(c.key === "amount" || c.key === "description" ? C.ink : C.text)
           .text(cells[c.key], x, y, { width: c.w - 6, align: c.align });
         x += c.w;
       });
@@ -183,28 +188,28 @@ const BUILD_DOCUMENT_PDF = (doc) =>
     y += 8;
     const tx = MARGIN + CONTENT_W - 250;
     rows.forEach(([label, value]) => {
-      pdf.font("Helvetica").fontSize(9.5).fillColor(C.text).text(label, tx, y, { width: 150 });
+      pdf.font("Inter").fontSize(9.5).fillColor(C.text).text(label, tx, y, { width: 150 });
       pdf.fillColor(C.ink).text(value, tx + 150, y, { width: 100, align: "right" });
       y += 16;
     });
     y += 2;
     pdf.moveTo(tx, y).lineTo(MARGIN + CONTENT_W, y).lineWidth(1).strokeColor(C.ink).stroke();
     y += 8;
-    pdf.font("Helvetica-Bold").fontSize(13).fillColor(C.ink).text("Total", tx, y, { width: 120 });
+    pdf.font("Inter-Bold").fontSize(13).fillColor(C.ink).text("Total", tx, y, { width: 120 });
     pdf.text(money(doc.grandTotal), tx + 110, y, { width: 140, align: "right" });
     y += 30;
 
     // ---------- NOTAS
     const block = (title, text, bold) => {
       if (!text) return;
-      pdf.font("Helvetica").fontSize(9);
+      pdf.font("Inter").fontSize(9);
       const h = pdf.heightOfString(text, { width: CONTENT_W }) + 18;
       if (y + h > BOTTOM) {
         pdf.addPage();
         y = MARGIN;
       }
       LABEL_TEXT(pdf, title, MARGIN, y);
-      pdf.font(bold ? "Helvetica-Bold" : "Helvetica").fontSize(9).fillColor(bold ? C.ink : C.text).text(text, MARGIN, y + 12, { width: CONTENT_W, lineGap: 1.5 });
+      pdf.font(bold ? "Inter-Bold" : "Inter").fontSize(9).fillColor(bold ? C.ink : C.text).text(text, MARGIN, y + 12, { width: CONTENT_W, lineGap: 1.5 });
       y = pdf.y + 14;
     };
     block("Observaciones", doc.observations);
@@ -220,7 +225,7 @@ const BUILD_DOCUMENT_PDF = (doc) =>
       y += 10;
       LABEL_TEXT(pdf, "Aceptación del cliente", MARGIN, y);
       pdf.moveTo(MARGIN, y + 48).lineTo(MARGIN + 220, y + 48).lineWidth(0.8).strokeColor("#cfcfc8").stroke();
-      pdf.font("Helvetica").fontSize(8).fillColor(C.muted).text("Firma y fecha", MARGIN, y + 53);
+      pdf.font("Inter").fontSize(8).fillColor(C.muted).text("Firma y fecha", MARGIN, y + 53);
     }
 
     // ---------- SELLO ANULADO + PIE EN TODAS LAS PÁGINAS
@@ -232,14 +237,14 @@ const BUILD_DOCUMENT_PDF = (doc) =>
       pdf.page.margins.bottom = 0;
       if (cancelled) {
         pdf.save().rotate(-18, { origin: [PAGE_W / 2, 420] });
-        pdf.font("Helvetica-Bold").fontSize(90).fillColor(C.danger).fillOpacity(0.12)
+        pdf.font("Inter-Bold").fontSize(90).fillColor(C.danger).fillOpacity(0.12)
           .text(isQuote ? "CANCELADO" : "ANULADA", 0, 380, { width: PAGE_W, align: "center", lineBreak: false });
         pdf.restore();
         pdf.fillOpacity(1);
       }
       const fy = 842 - 46;
       pdf.moveTo(MARGIN, fy - 8).lineTo(MARGIN + CONTENT_W, fy - 8).lineWidth(0.6).strokeColor(C.line).stroke();
-      pdf.font("Helvetica").fontSize(7.5).fillColor(C.muted)
+      pdf.font("Inter").fontSize(7.5).fillColor(C.muted)
         .text(`${company.name || ""} · ${(company.website || "").replace(/^https?:\/\//, "")}`, MARGIN, fy, { width: CONTENT_W - 80, lineBreak: false })
         .text(`${doc.number} · ${i + 1}/${range.count}`, MARGIN + CONTENT_W - 120, fy, { width: 120, align: "right", lineBreak: false });
       pdf.page.margins.bottom = bottomMargin;
