@@ -5,14 +5,44 @@ const { JWT_SECRET } = require("../config/env.config");
 
 // ----------------------
 // CLIENT IP
+// En Vercel, x-real-ip / x-vercel-forwarded-for los fija la propia plataforma (no se pueden falsificar)
 // ----------------------
 const GET_IP = (req) => {
   const raw =
+    req.headers["x-real-ip"] ||
+    req.headers["x-vercel-forwarded-for"]?.split(",")[0]?.trim() ||
     req.headers["x-forwarded-for"]?.split(",")[0]?.trim() ||
     req.ip ||
     req.socket?.remoteAddress ||
     "";
-  return raw.replace("::ffff:", "");
+  return String(raw).replace("::ffff:", "");
+};
+
+// ----------------------
+// LOCATION
+// 1) Cabeceras de geolocalización de Vercel (precisas y actualizadas)
+// 2) geoip-lite como respaldo (en local o fuera de Vercel). Su base de datos sitúa
+//    algunos rangos españoles en otros países, p. ej. DIGI España (79.116.x.x) en Rumanía
+// ----------------------
+const DECODE = (value) => {
+  try {
+    return value ? decodeURIComponent(String(value)) : "";
+  } catch {
+    return String(value || "");
+  }
+};
+
+const GET_LOCATION = (req, ip) => {
+  const country = req.headers["x-vercel-ip-country"];
+  if (country) {
+    return {
+      country: String(country).toUpperCase(),
+      region: DECODE(req.headers["x-vercel-ip-country-region"]),
+      city: DECODE(req.headers["x-vercel-ip-city"]),
+    };
+  }
+  const location = geoip.lookup(ip);
+  return { country: location?.country || "", region: location?.region || "", city: location?.city || "" };
 };
 
 // ----------------------
@@ -43,13 +73,13 @@ const GET_REQUEST_INFO = (req) => {
   const ip = GET_IP(req);
   const userAgent = req.headers["user-agent"] || "";
   const ua = new UAParser(userAgent).getResult();
-  const location = geoip.lookup(ip);
+  const location = GET_LOCATION(req, ip);
 
   return {
     ip,
-    country: location?.country || "",
-    region: location?.region || "",
-    city: location?.city || "",
+    country: location.country,
+    region: location.region,
+    city: location.city,
     browser: ua.browser.name || "Desconocido",
     browserVersion: ua.browser.version || "",
     os: ua.os.name || "Desconocido",
