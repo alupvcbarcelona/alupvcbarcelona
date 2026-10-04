@@ -32,7 +32,7 @@ const CREATE_MESSAGE = async (req, res) => {
     return res.status(400).json({ success: false, message: "Debes aceptar la política de privacidad." });
   }
 
-  const info = GET_REQUEST_INFO(req);
+  const info = await GET_REQUEST_INFO(req);
   const created = await MESSAGE_MODEL.create({
     name,
     email,

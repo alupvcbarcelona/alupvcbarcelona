@@ -56,7 +56,7 @@ const LOGIN_USER = async (req, res) => {
     return res.status(401).json({ message: "Email o contraseña incorrectos." });
   }
 
-  const info = GET_REQUEST_INFO(req);
+  const info = await GET_REQUEST_INFO(req);
   const loginInfo = { ...info, loginAt: new Date() };
 
   user.lastLoginAt = loginInfo.loginAt;

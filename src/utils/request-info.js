@@ -1,6 +1,6 @@
 const crypto = require("crypto");
 const UAParser = require("ua-parser-js");
-const geoip = require("geoip-lite");
+const { LOCATE } = require("./geolocation");
 const { JWT_SECRET } = require("../config/env.config");
 
 // ----------------------
@@ -16,33 +16,6 @@ const GET_IP = (req) => {
     req.socket?.remoteAddress ||
     "";
   return String(raw).replace("::ffff:", "");
-};
-
-// ----------------------
-// LOCATION
-// 1) Cabeceras de geolocalización de Vercel (precisas y actualizadas)
-// 2) geoip-lite como respaldo (en local o fuera de Vercel). Su base de datos sitúa
-//    algunos rangos españoles en otros países, p. ej. DIGI España (79.116.x.x) en Rumanía
-// ----------------------
-const DECODE = (value) => {
-  try {
-    return value ? decodeURIComponent(String(value)) : "";
-  } catch {
-    return String(value || "");
-  }
-};
-
-const GET_LOCATION = (req, ip) => {
-  const country = req.headers["x-vercel-ip-country"];
-  if (country) {
-    return {
-      country: String(country).toUpperCase(),
-      region: DECODE(req.headers["x-vercel-ip-country-region"]),
-      city: DECODE(req.headers["x-vercel-ip-city"]),
-    };
-  }
-  const location = geoip.lookup(ip);
-  return { country: location?.country || "", region: location?.region || "", city: location?.city || "" };
 };
 
 // ----------------------
@@ -67,13 +40,13 @@ const VISITOR_ID = (ip, ua) => {
 };
 
 // ----------------------
-// FULL REQUEST INFO: IP, LOCATION AND DEVICE
+// FULL REQUEST INFO: IP, LOCATION AND DEVICE (ASYNC: CONSULTA EL PROVEEDOR DE GEOLOCALIZACIÓN)
 // ----------------------
-const GET_REQUEST_INFO = (req) => {
+const GET_REQUEST_INFO = async (req) => {
   const ip = GET_IP(req);
   const userAgent = req.headers["user-agent"] || "";
   const ua = new UAParser(userAgent).getResult();
-  const location = GET_LOCATION(req, ip);
+  const location = await LOCATE(ip, req.headers);
 
   return {
     ip,

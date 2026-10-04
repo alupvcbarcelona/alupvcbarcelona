@@ -19,6 +19,8 @@ const settingsSchema = new Schema(
     website: { type: String, default: COMPANY.website },
     logo: { type: String, default: COMPANY.logo },
     iban: { type: String, default: COMPANY.iban },
+    googleMapsUrl: { type: String, default: COMPANY.googleMapsUrl },
+    googleReviewUrl: { type: String, default: COMPANY.googleReviewUrl },
     quoteConditions: { type: String, default: COMPANY.quoteConditions },
     invoiceNotes: { type: String, default: COMPANY.invoiceNotes },
     defaultIva: { type: Number, default: COMPANY.defaultIva },

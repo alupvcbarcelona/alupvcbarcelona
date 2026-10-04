@@ -1,5 +1,7 @@
 const VISIT_MODEL = require("../../models/visit.model");
 const { GET_REQUEST_INFO, MASK_IP } = require("../../utils/request-info");
+const MESSAGE_MODEL = require("../../models/message.model");
+const { LOCATE } = require("../../utils/geolocation");
 
 const BOT_REGEX = /bot|crawler|spider|crawling|headless|lighthouse|preview|facebookexternalhit|slurp/i;
 const TZ = "Europe/Madrid";
@@ -16,11 +18,12 @@ const REFERRER_HOST = (referrer) => {
 // PUBLIC: TRACK A PAGE VIEW
 //======================================================
 const TRACK_VISIT = async (req, res) => {
-  const info = GET_REQUEST_INFO(req);
-  if (BOT_REGEX.test(info.userAgent)) return res.status(204).end();
-
+  // BOTS Y PANEL: SE DESCARTAN ANTES DE CONSULTAR LA GEOLOCALIZACIÓN
+  if (BOT_REGEX.test(req.headers["user-agent"] || "")) return res.status(204).end();
   const path = String(req.body.path || "/").slice(0, 300);
   if (path.startsWith("/admin")) return res.status(204).end();
+
+  const info = await GET_REQUEST_INFO(req);
 
   const consent = req.body.consent === true;
   const referrer = REFERRER_HOST(req.body.referrer);
@@ -127,4 +130,41 @@ const GET_STATS = async (req, res) => {
   });
 };
 
-module.exports = { TRACK_VISIT, GET_STATS };
+//======================================================
+// ADMIN: CORREGIR LA UBICACIÓN DE VISITAS YA GUARDADAS
+// Vuelve a geolocalizar las IPs de las visitas de Rumanía o sin país (máx. 150 IPs por llamada)
+//======================================================
+const RELOCATE_VISITS = async (req, res) => {
+  const countries = Array.isArray(req.body.countries) && req.body.countries.length ? req.body.countries : ["RO", "", null];
+  const ips = (await VISIT_MODEL.distinct("ip", { country: { $in: countries }, ip: { $nin: [null, ""] } })).slice(0, 150);
+
+  let updated = 0;
+  let unchanged = 0;
+  for (const ip of ips) {
+    const location = await LOCATE(ip.endsWith(".0") ? ip.replace(/\.0$/, ".1") : ip);
+    if (!location.country || location.provider === "geoip-lite" || location.provider === "vercel") {
+      unchanged += 1;
+      continue;
+    }
+    const { modifiedCount } = await VISIT_MODEL.updateMany(
+      { ip, country: { $in: countries } },
+      { $set: { country: location.country, region: location.region, city: location.city } },
+    );
+    updated += modifiedCount;
+    await MESSAGE_MODEL.updateMany(
+      { "meta.ip": ip, "meta.country": { $in: countries } },
+      { $set: { "meta.country": location.country, "meta.city": location.city } },
+    );
+  }
+
+  const remaining = (await VISIT_MODEL.distinct("ip", { country: { $in: countries }, ip: { $nin: [null, ""] } })).length;
+  return res.status(200).json({
+    success: true,
+    message: ips.length
+      ? `${updated} visitas corregidas (${ips.length - unchanged} de ${ips.length} IPs reubicadas).`
+      : "No hay visitas pendientes de corregir.",
+    data: { ips: ips.length, updated, unchanged, remaining },
+  });
+};
+
+module.exports = { TRACK_VISIT, GET_STATS, RELOCATE_VISITS };
