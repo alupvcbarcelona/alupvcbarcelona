@@ -14,6 +14,7 @@ module.exports = {
   website: "https://alupvcbarcelona.es",
   logo: "https://res.cloudinary.com/bunzti4y/image/upload/v1785271487/logo_2_a6lvkk.png",
   iban: "",
+  instagramUrl: "", // VACÍO = NO SE MUESTRA EN LA WEB
   // FICHA DE GOOGLE (GOOGLE MAPS / PERFIL DE EMPRESA)
   googleMapsUrl: "https://maps.google.com/?cid=10121829245452887915",
   googleReviewUrl: "https://www.google.com/maps/place/Alupvcbarcelona/data=!4m6!3m5!1s0x256bb7d401e104bf:0x8c77f6122c61276b!8m2!3d41.5307212!4d2.4149583!16s%2Fg%2F11zxmz13yp!9m1!1b1",
