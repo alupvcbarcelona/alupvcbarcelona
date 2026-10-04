@@ -1,6 +1,6 @@
 const DOCUMENT_MODEL = require("../../models/document.model");
 const SETTINGS_MODEL = require("../../models/settings.model");
-const { NEXT_NUMBER } = require("./numbering");
+const { NEXT_NUMBER, GET_STATE, SET_NEXT } = require("./numbering");
 const { CALCULATE_TOTALS } = require("./totals");
 const { emailDocument } = require("../../emails/documents.emails");
 
@@ -279,7 +279,30 @@ const CONVERT_TO_INVOICE = async (req, res) => {
   return res.status(201).json({ success: true, message: `Factura ${invoice.number} creada.`, data: invoice });
 };
 
+//======================================================
+// NUMBERING: GET (?year=) / SET NEXT NUMBER ({ type, next, year })
+//======================================================
+const GET_NUMBERING = async (req, res) => {
+  const year = Number(req.query.year) || new Date().getFullYear();
+  const data = await Promise.all(TYPES.map((type) => GET_STATE(type, year)));
+  return res.status(200).json({ success: true, data });
+};
+
+const SET_NUMBERING = async (req, res) => {
+  const { type } = req.body;
+  if (!TYPES.includes(type)) return res.status(400).json({ success: false, message: "Tipo de documento no válido." });
+  const year = Number(req.body.year) || new Date().getFullYear();
+  const data = await SET_NEXT(type, year, Number(req.body.next));
+  return res.status(200).json({
+    success: true,
+    message: `El próximo ${type === "factura" ? "número de factura" : "número de presupuesto"} será ${data.nextNumber}.`,
+    data,
+  });
+};
+
 module.exports = {
+  GET_NUMBERING,
+  SET_NUMBERING,
   CREATE_DOCUMENT,
   GET_DOCUMENTS,
   GET_DOCUMENT,

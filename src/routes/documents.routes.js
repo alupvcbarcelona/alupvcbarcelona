@@ -2,6 +2,8 @@ const express = require("express");
 const DOCUMENT_ROUTES = express.Router();
 
 const {
+  GET_NUMBERING,
+  SET_NUMBERING,
   CREATE_DOCUMENT,
   GET_DOCUMENTS,
   GET_DOCUMENT,
@@ -17,6 +19,9 @@ const { isAuth } = require("../middlewares/is-auth.middleware");
 DOCUMENT_ROUTES.use(isAuth);
 
 DOCUMENT_ROUTES.get("/", GET_DOCUMENTS); // ?type=presupuesto|factura&status=&q=&year=
+// NUMERACIÓN (ANTES DE "/:id")
+DOCUMENT_ROUTES.get("/numbering", GET_NUMBERING); // ?year=
+DOCUMENT_ROUTES.put("/numbering", SET_NUMBERING); // { type, next, year }
 DOCUMENT_ROUTES.post("/", CREATE_DOCUMENT);
 DOCUMENT_ROUTES.get("/:id", GET_DOCUMENT);
 DOCUMENT_ROUTES.put("/:id", UPDATE_DOCUMENT);
