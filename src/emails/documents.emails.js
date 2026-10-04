@@ -1,6 +1,7 @@
 const { sendMail } = require("../config/nodemailer");
 const { ESCAPE_HTML, ESCAPE_MULTILINE } = require("../utils/escape");
 const { LAYOUT, BRAND, H1, P } = require("./layout");
+const { BUILD_DOCUMENT_PDF, PDF_FILENAME } = require("../utils/document-pdf");
 
 const PRICE = (value) =>
   new Intl.NumberFormat("es-ES", { style: "currency", currency: "EUR" }).format(value || 0);
@@ -93,8 +94,8 @@ const emailDocument = async (doc, message) => {
   const intro =
     message ||
     (doc.type === "presupuesto"
-      ? `Gracias por confiar en ${company.name}. Te enviamos el presupuesto solicitado. Si tienes cualquier duda o quieres aceptarlo, solo tienes que responder a este correo.`
-      : `Te enviamos la factura correspondiente a los trabajos realizados. Gracias por confiar en ${company.name}.`);
+      ? `Gracias por confiar en ${company.name}. Te enviamos el presupuesto solicitado; también lo tienes adjunto en PDF. Si tienes cualquier duda o quieres aceptarlo, solo tienes que responder a este correo.`
+      : `Te enviamos la factura correspondiente a los trabajos realizados (adjunta en PDF). Gracias por confiar en ${company.name}.`);
 
   const body = `
     ${H1(`${label} ${doc.number}`)}
@@ -104,12 +105,21 @@ const emailDocument = async (doc, message) => {
     <p style="margin:32px 0 0;font-size:14px;">Un saludo,<br><strong>${ESCAPE_HTML(company.owner || company.name)}</strong><br>${ESCAPE_HTML(company.name)}</p>
   `;
 
+  // PDF ADJUNTO (SI FALLA LA GENERACIÓN, EL EMAIL SE ENVÍA IGUALMENTE CON EL DETALLE EN EL CUERPO)
+  let attachments;
+  try {
+    const pdf = await BUILD_DOCUMENT_PDF(doc);
+    attachments = [{ filename: PDF_FILENAME(doc), content: pdf, contentType: "application/pdf" }];
+  } catch (error) {
+    console.error(`Error generating PDF ${doc.number}: ${error.message}`);
+  }
+
   return sendMail(
     doc.client.email,
     company.email ? [company.email] : [],
     `${label} ${doc.number} · ${company.name}`,
     LAYOUT({ title: `${label} ${doc.number}`, preheader: `${label} ${doc.number} por ${PRICE(doc.grandTotal)}`, body, company }),
-    { replyTo: company.email, fromName: company.name },
+    { replyTo: company.email, fromName: company.name, attachments },
   );
 };
 

@@ -3,6 +3,7 @@ const SETTINGS_MODEL = require("../../models/settings.model");
 const { NEXT_NUMBER, GET_STATE, SET_NEXT } = require("./numbering");
 const { CALCULATE_TOTALS } = require("./totals");
 const { emailDocument } = require("../../emails/documents.emails");
+const { BUILD_DOCUMENT_PDF, PDF_FILENAME } = require("../../utils/document-pdf");
 
 const TYPES = ["presupuesto", "factura"];
 const STATUS = {
@@ -206,6 +207,20 @@ const CANCEL_DOCUMENT = async (req, res) => {
 };
 
 //======================================================
+// DOWNLOAD PDF (?inline=true PARA ABRIRLO EN EL NAVEGADOR)
+//======================================================
+const GET_DOCUMENT_PDF = async (req, res) => {
+  const document = await DOCUMENT_MODEL.findById(req.params.id);
+  if (!document) return NOT_FOUND(res);
+  const pdf = await BUILD_DOCUMENT_PDF(document.toObject());
+  const filename = PDF_FILENAME(document);
+  res.setHeader("Content-Type", "application/pdf");
+  res.setHeader("Content-Length", pdf.length);
+  res.setHeader("Content-Disposition", `${req.query.inline === "true" ? "inline" : "attachment"}; filename="${filename}"`);
+  return res.send(pdf);
+};
+
+//======================================================
 // SEND BY EMAIL
 //======================================================
 const SEND_DOCUMENT = async (req, res) => {
@@ -311,4 +326,5 @@ module.exports = {
   SEND_DOCUMENT,
   CONVERT_TO_INVOICE,
   CANCEL_DOCUMENT,
+  GET_DOCUMENT_PDF,
 };
